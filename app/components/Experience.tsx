@@ -30,7 +30,7 @@ export const Experience = () => {
     if (!g || !ctrl) return;
     g.getWorldPosition(worldPos.current);
 
-    const targetY = worldPos.current.y + 3;
+    const targetY = worldPos.current.y + 2;
     const targetZ = worldPos.current.z - 1;
 
     if (typeof ctrl.setTarget === "function") {

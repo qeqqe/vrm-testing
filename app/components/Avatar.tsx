@@ -1,9 +1,11 @@
-import { useGLTF } from "@react-three/drei";
-import React, { useEffect } from "react";
+import { useAnimations, useFBX, useGLTF } from "@react-three/drei";
+import React, { useEffect, useMemo } from "react";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import { useControls } from "leva";
+import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { lerp } from "three/src/math/MathUtils.js";
+import { loadMixamoAnimation } from "@/utils/remapMixamo";
 type AvatarSource = string | File;
 
 interface AvatarProps {
@@ -22,6 +24,41 @@ const Avatar: React.FC<AvatarProps> = ({ avatar, ...props }) => {
     }
   );
 
+  const assetA = useFBX("/animation/Dancing.fbx");
+  const assetB = useFBX("/animation/Snake.fbx");
+  const assetC = useFBX("/animation/Idle.fbx");
+
+  const currentVRM = userData.vrm;
+  const remapMixamoAnimationToVrm = (vrm: any, asset: any) => {
+    return loadMixamoAnimation(vrm, asset.animations[0], asset);
+  };
+
+  const animationClipA = useMemo(() => {
+    if (!currentVRM || !assetA) return null;
+    const clip = remapMixamoAnimationToVrm(currentVRM, assetA);
+    clip.name = "Dancing";
+    return clip;
+  }, [assetA, currentVRM]);
+
+  const animationClipB = useMemo(() => {
+    if (!currentVRM || !assetB) return null;
+    const clip = remapMixamoAnimationToVrm(currentVRM, assetB);
+    clip.name = "Snake";
+    return clip;
+  }, [assetB, currentVRM]);
+
+  const animationClipC = useMemo(() => {
+    if (!currentVRM || !assetC) return null;
+    const clip = remapMixamoAnimationToVrm(currentVRM, assetC);
+    clip.name = "Idle";
+    return clip;
+  }, [assetC, currentVRM]);
+
+  const clips = [animationClipA, animationClipB, animationClipC].filter(
+    (c): c is THREE.AnimationClip => c != null
+  );
+  const { actions } = useAnimations(clips, currentVRM?.scene);
+
   useEffect(() => {
     const vrm = userData.vrm;
     console.log("VRM:", vrm);
@@ -39,19 +76,43 @@ const Avatar: React.FC<AvatarProps> = ({ avatar, ...props }) => {
     }
   }, [scene, userData]);
 
-  const { aa, ih, ee, oh, ou, blinkLeft, blinkRight, angry, sad, happy } =
-    useControls("VRM", {
-      aa: { value: 0, min: 0, max: 1 },
-      ih: { value: 0, min: 0, max: 1 },
-      ee: { value: 0, min: 0, max: 1 },
-      oh: { value: 0, min: 0, max: 1 },
-      ou: { value: 0, min: 0, max: 1 },
-      blinkLeft: { value: 0, min: 0, max: 1 },
-      blinkRight: { value: 0, min: 0, max: 1 },
-      angry: { value: 0, min: 0, max: 1 },
-      sad: { value: 0, min: 0, max: 1 },
-      happy: { value: 0, min: 0, max: 1 },
-    });
+  const {
+    aa,
+    ih,
+    ee,
+    oh,
+    ou,
+    blinkLeft,
+    blinkRight,
+    angry,
+    sad,
+    happy,
+    animation,
+  } = useControls("VRM", {
+    aa: { value: 0, min: 0, max: 1 },
+    ih: { value: 0, min: 0, max: 1 },
+    ee: { value: 0, min: 0, max: 1 },
+    oh: { value: 0, min: 0, max: 1 },
+    ou: { value: 0, min: 0, max: 1 },
+    blinkLeft: { value: 0, min: 0, max: 1 },
+    blinkRight: { value: 0, min: 0, max: 1 },
+    angry: { value: 0, min: 0, max: 1 },
+    sad: { value: 0, min: 0, max: 1 },
+    happy: { value: 0, min: 0, max: 1 },
+    animation: {
+      options: ["None", "Dancing", "Snake", "Idle"],
+      value: "Idle",
+    },
+  });
+
+  useEffect(() => {
+    if (animation == "None") return;
+    actions[animation]?.play();
+
+    return () => {
+      actions[animation]?.stop();
+    };
+  }, [actions, animation]);
 
   const lerpExpression = (name: any, value: number, lerpFactor: number) => {
     userData.vrm.expressionManager.setValue(
