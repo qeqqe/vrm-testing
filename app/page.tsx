@@ -3,10 +3,12 @@ import { Loader, Stats } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
 import { Experience } from "./components/Experience";
+import Camera from "./components/Camera";
 function App() {
   return (
     <>
       <Loader />
+      <Camera />
       <div style={{ height: "100vh", width: "100vw" }}>
         <Canvas
           style={{ height: "100%", width: "100%" }}
